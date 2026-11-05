@@ -15,9 +15,10 @@ export const ExportModal: React.FC<Props> = ({ plan, appState, onClose, lang }) 
   const t = translations[lang];
 
   const exportCSV = async () => {
+    const escapeCsv = (str: string | undefined | null) => `"${(str || '').replace(/"/g, '""')}"`;
     let csvContent = "Shot,Type,Description,Dialog,Cue,Timing\n";
     plan.shots.forEach((shot, i) => {
-      csvContent += `"${i+1}","${shot.type}","${shot.description}","${shot.dialog}","${shot.visualCue}","${shot.timing}"\n`;
+      csvContent += `${i + 1},${escapeCsv(shot.type)},${escapeCsv(shot.description)},${escapeCsv(shot.dialog)},${escapeCsv(shot.visualCue)},${escapeCsv(shot.timing)}\n`;
     });
     const base64 = btoa(unescape(encodeURIComponent(csvContent)));
     await Flow.download({
@@ -79,7 +80,7 @@ export const ExportModal: React.FC<Props> = ({ plan, appState, onClose, lang }) 
     try {
       const firstShot = plan.shots.find(s => s.renderedImage);
       if (!firstShot) {
-        alert("Render at least one shot first.");
+        alert(lang === 'vi' ? "Vui lòng render ít nhất một cảnh trước." : "Render at least one shot first.");
         setIsExporting(false);
         return;
       }
@@ -91,7 +92,10 @@ export const ExportModal: React.FC<Props> = ({ plan, appState, onClose, lang }) 
         durationSeconds: 4
       });
       await Flow.download({ base64: video.base64, mimeType: video.mimeType, filename: `Animatic_${plan.title}.mp4` });
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      console.error(err);
+      alert(lang === 'vi' ? "Tạo video nháp (Animatic) thất bại. Vui lòng thử lại." : "Failed to generate animatic video. Please try again.");
+    }
     setIsExporting(false);
   };
 

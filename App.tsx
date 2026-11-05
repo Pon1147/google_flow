@@ -3,7 +3,7 @@ import { WelcomeModal } from './components/WelcomeModal';
 import { SetupForm } from './components/SetupForm';
 import { ProductionWorkspace } from './components/ProductionWorkspace';
 import { ProductionPlan, AppState } from './types';
-import { Language } from './lib/i18n';
+import { Language, languagePromptNames } from './lib/i18n';
 import { Flow } from 'flow-sdk';
 import { extractJson } from './lib/utils';
 
@@ -48,42 +48,57 @@ export default function App() {
 
   const handleLanguageChange = (newLang: Language) => {
     setLang(newLang);
-    setAppState(prev => ({ ...prev, language: newLang }));
+    setAppState(prev => ({
+      ...prev,
+      language: newLang,
+      settings: {
+        ...prev.settings,
+        language: languagePromptNames[newLang] || prev.settings.language
+      }
+    }));
   };
 
   const handleGeneratePlan = async (state: AppState) => {
-    setAppState(state);
+    const activeLanguageName = languagePromptNames[state.language] || state.settings.language || 'Vietnamese';
+    const updatedState = {
+      ...state,
+      settings: {
+        ...state.settings,
+        language: activeLanguageName
+      }
+    };
+    setAppState(updatedState);
     
     const dnaContext = `
       LOCKED PRODUCT DNA:
-      - Features: ${state.dna.features || 'Standard'}
-      - Benefits: ${state.dna.benefits || 'High quality'}
-      - Dimensions: ${state.dna.dimensions || 'Life-size'}
-      - Colors: ${state.dna.colors || 'Natural'}
-      - Materials: ${state.dna.materials || 'Standard'}
-      - Brand Style: ${state.dna.brandStyle || 'Modern'}
-      - Spatial Logic: ${state.dna.anatomyLocks || 'Realistic human-scale'}
+      - Features: ${updatedState.dna.features || 'Standard'}
+      - Benefits: ${updatedState.dna.benefits || 'High quality'}
+      - Dimensions: ${updatedState.dna.dimensions || 'Life-size'}
+      - Colors: ${updatedState.dna.colors || 'Natural'}
+      - Materials: ${updatedState.dna.materials || 'Standard'}
+      - Brand Style: ${updatedState.dna.brandStyle || 'Modern'}
+      - Spatial Logic: ${updatedState.dna.anatomyLocks || 'Realistic human-scale'}
     `;
 
     const prompt = `
-      Act as a Creative Director. Generate a detailed video storyboard plan for: ${state.productDescription}.
+      Act as a Creative Director. Generate a detailed video storyboard plan for: ${updatedState.productDescription}.
       
       DNA CONSTRAINTS:
       ${dnaContext}
 
       PRODUCTION SETTINGS:
-      - Category: ${state.settings.category}
-      - Visual Style: ${state.settings.style}
-      - Core Idea: ${state.ideaDescription || 'Direct Showcase'}
-      - Ref URL: ${state.productUrl}
-      - Total Duration: ${state.settings.duration}
-      - Aspect Ratio: ${state.settings.aspectRatio}
-      - Content Language: ${state.settings.language}
-      - Character Details: ${state.characterDescription || 'None'}
+      - Category: ${updatedState.settings.category}
+      - Visual Style: ${updatedState.settings.style}
+      - Core Idea: ${updatedState.ideaDescription || 'Direct Showcase'}
+      - Ref URL: ${updatedState.productUrl}
+      - Total Duration: ${updatedState.settings.duration}
+      - Aspect Ratio: ${updatedState.settings.aspectRatio}
+      - Content Language: ${activeLanguageName}
+      - Character Details: ${updatedState.characterDescription || 'None'}
       
       Requirements:
       1. 'description' field MUST be in English for stable image generation.
-      2. 'dialog', 'visualCue', and 'title' MUST be in ${state.settings.language}.
+      2. 'dialog', 'visualCue', and 'title' MUST be in ${activeLanguageName}.
       3. Create 5-8 distinct shots that follow a cinematic flow.
       
       OUTPUT FORMAT (STRICT JSON ONLY):
@@ -94,8 +109,8 @@ export default function App() {
             "id": "1",
             "type": "Wide Shot / Medium Shot / Close Up / Macro",
             "description": "Visual instruction in English focusing on product detail and DNA colors",
-            "dialog": "Voiceover/Dialogue in ${state.settings.language}",
-            "visualCue": "On-screen text in ${state.settings.language}",
+            "dialog": "Voiceover/Dialogue in ${activeLanguageName}",
+            "visualCue": "On-screen text in ${activeLanguageName}",
             "timing": "3.5"
           }
         ]
@@ -104,7 +119,7 @@ export default function App() {
 
     try {
       // Giới hạn số lượng ảnh gửi lên để tránh lỗi payload quá lớn hoặc timeout
-      const imagePayload = state.productImages.slice(0, 3).map(img => ({ 
+      const imagePayload = updatedState.productImages.slice(0, 3).map(img => ({ 
         base64: img.base64, 
         mimeType: img.mimeType 
       }));

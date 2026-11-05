@@ -27,10 +27,10 @@ export function extractJson<T>(text: string): T | null {
       jsonStr = jsonStr.substring(startIdx, endIdx + 1);
     }
     
-    // 3. Làm sạch JSON: xóa dấu phẩy thừa trước dấu đóng ngoặc
+    // 3. Làm sạch JSON: xóa dấu phẩy thừa trước dấu đóng ngoặc và ký tự điều khiển ẩn (giữ lại \t, \n, \r)
     const cleaned = jsonStr
       .replace(/,\s*([\]}])/g, '$1') // Xóa trailing commas
-      .replace(/[\u0000-\u001F\u007F-\u009F]/g, ""); // Xóa ký tự điều khiển ẩn
+      .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/g, ""); // Xóa ký tự điều khiển ẩn trừ \t, \n, \r
 
     return JSON.parse(cleaned) as T;
   } catch (e) {

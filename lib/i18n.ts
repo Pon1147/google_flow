@@ -168,3 +168,14 @@ export const translations: Record<Language, any> = {
     translations[lang] = { ...translations.en, ...translations[lang] };
   }
 });
+
+
+export const languagePromptNames: Record<Language, string> = {
+  vi: 'Vietnamese',
+  en: 'English',
+  ko: 'Korean',
+  ja: 'Japanese',
+  zh: 'Chinese',
+  fr: 'French',
+  th: 'Thai'
+};
