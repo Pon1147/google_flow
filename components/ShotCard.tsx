@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Shot } from '../types';
 import { Flow } from 'flow-sdk';
 
@@ -10,9 +10,19 @@ interface Props {
   onRender: () => void;
   aspectRatio: '16:9' | '9:16' | '1:1';
   t: any;
+  onOpenUpscale?: () => void;
 }
 
-export const ShotCard: React.FC<Props> = ({ index, shot, onUpdate, onRemove, onRender, aspectRatio, t }) => {
+export const ShotCard: React.FC<Props> = ({
+  index,
+  shot,
+  onUpdate,
+  onRemove,
+  onRender,
+  aspectRatio,
+  t,
+  onOpenUpscale
+}) => {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
 
@@ -43,10 +53,11 @@ export const ShotCard: React.FC<Props> = ({ index, shot, onUpdate, onRemove, onR
 
   const handleDownload = async () => {
     if (!shot.renderedImage) return;
+    const is4kSuffix = shot.renderedImage.is4k ? '_4K' : '';
     await Flow.download({
       base64: shot.renderedImage.base64,
       mimeType: shot.renderedImage.mimeType,
-      filename: `Shot_${index}_${shot.type.replace(/\s/g, '_')}.png`
+      filename: `Shot_${index}_${shot.type.replace(/\s/g, '_')}${is4kSuffix}.png`
     });
   };
 
@@ -92,6 +103,25 @@ export const ShotCard: React.FC<Props> = ({ index, shot, onUpdate, onRemove, onR
             <span className="px-2 py-1 bg-black/60 backdrop-blur-md rounded text-[10px] font-mono text-amber-500 border border-white/10 uppercase tracking-tighter">
               {t.shot} {index.toString().padStart(2, '0')}
             </span>
+            {shot.renderedImage?.is4k && (
+              <span className="px-2 py-1 bg-amber-500/20 border border-amber-500/40 text-amber-400 rounded text-[9px] font-black uppercase tracking-wider flex items-center gap-1 backdrop-blur-md">
+                <span className="material-symbols-outlined text-[11px]">hd</span>
+                {t.badge4k}
+              </span>
+            )}
+          </div>
+
+          <div className="absolute top-4 right-4 flex items-center gap-2 z-20">
+            {shot.renderedImage && onOpenUpscale && (
+              <button 
+                onClick={onOpenUpscale}
+                className="px-2.5 py-1 bg-black/60 hover:bg-amber-600/80 backdrop-blur-md rounded text-[9px] font-mono text-slate-300 hover:text-white border border-white/10 flex items-center gap-1 transition-all shadow-md active:scale-95"
+                title={t.upscale4k}
+              >
+                <span className="material-symbols-outlined text-[12px]">open_in_new</span>
+                <span>{shot.renderedImage.is4k ? '4K Flow' : t.upscale4k}</span>
+              </button>
+            )}
           </div>
 
           <div className="absolute bottom-4 right-4 flex gap-2 z-20">
@@ -107,7 +137,7 @@ export const ShotCard: React.FC<Props> = ({ index, shot, onUpdate, onRemove, onR
                   {shot.renderedImage ? t.regenerate : t.createImage}
                 </button>
                 {shot.renderedImage && (
-                  <button onClick={handleDownload} className="p-2 bg-black/60 backdrop-blur-md rounded-full text-white border border-white/10 hover:bg-emerald-600 transition-all">
+                  <button onClick={handleDownload} className="p-2 bg-black/60 backdrop-blur-md rounded-full text-white border border-white/10 hover:bg-emerald-600 transition-all" title={t.download}>
                     <span className="material-symbols-outlined text-sm">download</span>
                   </button>
                 )}

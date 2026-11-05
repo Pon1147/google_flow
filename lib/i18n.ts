@@ -76,7 +76,18 @@ export const translations: Record<Language, any> = {
     generateMaster: "Tạo Master Grid",
     renderIndividual: "Tạo từng frame/scene",
     anatomyLocks: "Logic tỉ lệ & Giải phẫu (Anatomy)",
-    anatomyPlaceholder: "Ràng buộc tỉ lệ giữa sản phẩm và con người, bàn tay, không gian... (AI sẽ tự phân tích nếu dùng AI Analysis)"
+    anatomyPlaceholder: "Ràng buộc tỉ lệ giữa sản phẩm và con người, bàn tay, không gian... (AI sẽ tự phân tích nếu dùng AI Analysis)",
+    upscale4k: "Upscale 4K (Flow)",
+    badge4k: "4K Ultra HD",
+    copyMediaId: "Sao chép Media ID",
+    copied: "Đã chép!",
+    load4kFromGallery: "Nạp bản 4K từ Gallery",
+    galleryGuideTitle: "Cầu nối Upscale 4K Google Flow",
+    galleryGuideStep1: "Ảnh đã tự động lưu trong Gallery. Bấm 'Sao chép ID' để định danh.",
+    galleryGuideStep2: "Mở tab Media/Gallery của dự án trên Flow, chọn ảnh này và bấm nút 'Upscale 4K'.",
+    galleryGuideStep3: "Sau khi Flow xử lý xong, quay lại đây bấm 'Nạp bản 4K từ Gallery'.",
+    mediaIdLabel: "Media ID:",
+    close: "Đóng"
   },
   en: {
     welcome: "Welcome",
@@ -153,7 +164,18 @@ export const translations: Record<Language, any> = {
     generateMaster: "Generate Master Grid",
     renderIndividual: "Generate individual shots",
     anatomyLocks: "Anatomy & Proportional Logic",
-    anatomyPlaceholder: "Hard locks for scale relative to humans, body parts, and environment..."
+    anatomyPlaceholder: "Hard locks for scale relative to humans, body parts, and environment...",
+    upscale4k: "Upscale 4K (Flow)",
+    badge4k: "4K Ultra HD",
+    copyMediaId: "Copy Media ID",
+    copied: "Copied!",
+    load4kFromGallery: "Load 4K from Gallery",
+    galleryGuideTitle: "Google Flow 4K Upscale Bridge",
+    galleryGuideStep1: "Image is auto-saved in Gallery. Click 'Copy ID' to identify it.",
+    galleryGuideStep2: "Open the project Media/Gallery tab in Flow, select this image, and click 'Upscale 4K'.",
+    galleryGuideStep3: "Once Flow finishes upscaling, return here and click 'Load 4K from Gallery'.",
+    mediaIdLabel: "Media ID:",
+    close: "Close"
   },
   ko: { langName: "한국어" },
   ja: { langName: "日本語" },
@@ -168,7 +190,6 @@ export const translations: Record<Language, any> = {
     translations[lang] = { ...translations.en, ...translations[lang] };
   }
 });
-
 
 export const languagePromptNames: Record<Language, string> = {
   vi: 'Vietnamese',

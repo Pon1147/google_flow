@@ -12,6 +12,8 @@ export interface Shot {
     base64: string;
     mimeType: string;
     mediaId: string;
+    is4k?: boolean;
+    name?: string;
   };
 }
 

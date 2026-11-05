@@ -3,6 +3,7 @@ import { ProductionPlan, AppState, Shot } from '../types';
 import { Flow } from 'flow-sdk';
 import { ShotCard } from './ShotCard';
 import { ExportModal } from './ExportModal';
+import { GalleryUpscaleModal } from './GalleryUpscaleModal';
 import { Reorder } from 'motion/react';
 import { Language, translations } from '../lib/i18n';
 import { LanguagePicker } from './LanguagePicker';
@@ -22,6 +23,7 @@ export const ProductionWorkspace: React.FC<Props> = ({ plan, appState, onBack, l
   const [viewMode, setViewMode] = useState<'list' | 'storyboard'>('list');
   const [loadingShots, setLoadingShots] = useState<Record<string, number>>({});
   const [masterGridProgress, setMasterGridProgress] = useState<number | null>(null);
+  const [upscaleShot, setUpscaleShot] = useState<{ shot: Shot; index: number } | null>(null);
   
   const t = translations[lang];
 
@@ -30,6 +32,25 @@ export const ProductionWorkspace: React.FC<Props> = ({ plan, appState, onBack, l
       ...prev,
       shots: prev.shots.map(s => s.id === shotId ? { ...s, ...updates } : s)
     }));
+  };
+
+  const handleSelect4kShot = async (shotId: string) => {
+    try {
+      const selectedItem = await Flow.media.select({ filter: 'image' });
+      if (selectedItem) {
+        handleUpdateShot(shotId, {
+          renderedImage: {
+            base64: selectedItem.base64,
+            mimeType: selectedItem.mimeType,
+            mediaId: selectedItem.mediaId,
+            name: selectedItem.name,
+            is4k: true
+          }
+        });
+      }
+    } catch (err) {
+      console.error("Failed to select 4k image from gallery:", err);
+    }
   };
 
   const handleRenderShot = async (shotId: string) => {
@@ -65,7 +86,12 @@ export const ProductionWorkspace: React.FC<Props> = ({ plan, appState, onBack, l
         modelDisplayName: '🍌 Nano Banana Pro'
       });
 
-      handleUpdateShot(shotId, { renderedImage: result });
+      handleUpdateShot(shotId, {
+        renderedImage: {
+          ...result,
+          is4k: false
+        }
+      });
     } catch (error) {
       console.error("Render failed", error);
       alert(lang === 'vi' ? `Render cảnh #${shot.id} thất bại.` : `Failed to render shot #${shot.id}.`);
@@ -128,7 +154,6 @@ export const ProductionWorkspace: React.FC<Props> = ({ plan, appState, onBack, l
       for (let i = 0; i < currentPlan.shots.length; i++) {
         const shot = currentPlan.shots[i];
         if (!shot.renderedImage) {
-           // Placeholder for non-rendered shots
            const col = i % cols;
            const row = Math.floor(i / cols);
            const x = padding + col * (shotWidth + padding);
@@ -153,7 +178,6 @@ export const ProductionWorkspace: React.FC<Props> = ({ plan, appState, onBack, l
         await new Promise((resolve, reject) => {
           img.onload = resolve;
           img.onerror = reject;
-          // Timeout to prevent hanging
           setTimeout(reject, 10000);
         });
         
@@ -164,7 +188,8 @@ export const ProductionWorkspace: React.FC<Props> = ({ plan, appState, onBack, l
         
         ctx.fillStyle = '#fbbf24';
         ctx.font = 'bold 30px sans-serif';
-        ctx.fillText(`SCENE ${(i+1).toString().padStart(2, '0')} - ${shot.type.toUpperCase()}`, x + 30, y + shotHeight - 30);
+        const is4kTag = shot.renderedImage.is4k ? ' [4K]' : '';
+        ctx.fillText(`SCENE ${(i+1).toString().padStart(2, '0')} - ${shot.type.toUpperCase()}${is4kTag}`, x + 30, y + shotHeight - 30);
       }
 
       setMasterGridProgress(100);
@@ -271,11 +296,16 @@ export const ProductionWorkspace: React.FC<Props> = ({ plan, appState, onBack, l
                   <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-[#16161e] cursor-grab active:cursor-grabbing border border-transparent hover:border-slate-800 transition-all group">
                     <span className="text-[10px] font-mono text-slate-600 w-4 font-bold">{(idx + 1).toString().padStart(2, '0')}</span>
                     <div className="flex-1 overflow-hidden">
-                      <p className="text-[11px] font-black text-slate-300 truncate uppercase tracking-tight group-hover:text-amber-500 transition-colors">{shot.type}</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-[11px] font-black text-slate-300 truncate uppercase tracking-tight group-hover:text-amber-500 transition-colors">{shot.type}</p>
+                        {shot.renderedImage?.is4k && (
+                          <span className="px-1 py-0.2 text-[8px] font-bold bg-amber-500/20 text-amber-400 rounded border border-amber-500/40">4K</span>
+                        )}
+                      </div>
                       <p className="text-[10px] text-slate-500 truncate italic">{shot.description}</p>
                     </div>
                     {shot.renderedImage && (
-                      <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]"></div>
+                      <div className={`w-2 h-2 rounded-full ${shot.renderedImage.is4k ? 'bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.8)]' : 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]'}`}></div>
                     )}
                   </div>
                 </Reorder.Item>
@@ -297,6 +327,7 @@ export const ProductionWorkspace: React.FC<Props> = ({ plan, appState, onBack, l
                   onRender={() => handleRenderShot(shot.id)}
                   aspectRatio={appState.settings.aspectRatio}
                   t={t}
+                  onOpenUpscale={() => setUpscaleShot({ shot, index: idx + 1 })}
                 />
               ))}
               <button 
@@ -364,7 +395,28 @@ export const ProductionWorkspace: React.FC<Props> = ({ plan, appState, onBack, l
                         </div>
                       )}
                       
-                      <div className="absolute top-3 left-3 px-2 py-1 bg-black/70 backdrop-blur rounded font-mono text-[10px] text-amber-500 border border-white/5 z-20">#{idx+1}</div>
+                      <div className="absolute top-3 left-3 flex items-center gap-1.5 z-20">
+                        <span className="px-2 py-1 bg-black/70 backdrop-blur rounded font-mono text-[10px] text-amber-500 border border-white/5">
+                          #{idx+1}
+                        </span>
+                        {shot.renderedImage?.is4k && (
+                          <span className="px-1.5 py-0.5 bg-amber-500/30 backdrop-blur rounded font-mono text-[9px] font-bold text-amber-400 border border-amber-500/40">
+                            4K
+                          </span>
+                        )}
+                      </div>
+
+                      {shot.renderedImage && (
+                        <div className="absolute top-3 right-3 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => setUpscaleShot({ shot, index: idx + 1 })}
+                            className="p-1.5 bg-black/70 hover:bg-amber-600 backdrop-blur rounded-lg text-slate-300 hover:text-white border border-white/10 transition-colors"
+                            title={t.upscale4k}
+                          >
+                            <span className="material-symbols-outlined text-xs">hd</span>
+                          </button>
+                        </div>
+                      )}
                       
                       {loadingShots[shot.id] !== undefined && (
                         <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center z-30">
@@ -408,6 +460,17 @@ export const ProductionWorkspace: React.FC<Props> = ({ plan, appState, onBack, l
           plan={currentPlan} 
           appState={appState}
           onClose={() => setIsExporting(false)} 
+          lang={lang}
+        />
+      )}
+
+      {upscaleShot && (
+        <GalleryUpscaleModal
+          isOpen={true}
+          shot={currentPlan.shots.find(s => s.id === upscaleShot.shot.id) || upscaleShot.shot}
+          shotIndex={upscaleShot.index}
+          onClose={() => setUpscaleShot(null)}
+          onSelect4k={() => handleSelect4kShot(upscaleShot.shot.id)}
           lang={lang}
         />
       )}
